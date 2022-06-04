@@ -4,7 +4,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class HAL extends Thread{
+public class HAL extends Thread {
 
     private String PATH;
     private int bpIn;

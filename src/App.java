@@ -27,7 +27,7 @@ public class App {
     }
     public static void printList(ArrayList<Pair<Integer, Integer>> list) {
         for (int k = 0; k < list.size(); k++) {
-            System.out.println("HAL-Prozessor: "+ k +" inPort: "+ list.get(k).getValue0() +" outPort: "+list.get(k).getValue1());
+            System.out.println("HAL-Prozessor: "+ k +" inPort: "+ list.get(k).getValue0() +", outPort: "+list.get(k).getValue1());
         }
     }
     public static void preFillList(ArrayList<Pair<Integer, Integer>> list, int amount) {
