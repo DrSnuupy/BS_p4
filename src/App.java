@@ -32,7 +32,7 @@ public class App {
     }
     public static void preFillList(ArrayList<Pair<Integer, Integer>> list, int amount) {
         for (int i = 0; i < amount+1; i++) {
-            list.add(i, Pair.with(null, null));
+            list.add(i, Pair.with(0, 0));
         }
     }
 
@@ -62,6 +62,8 @@ public class App {
         //loop through lines
         boolean halprg = true; String programm= ""; int halnr; int bufferPort = 0;
         for(int i = lines.size()-1; i >= 0; i--) {
+            String preS=""; String postS=""; 
+            int firstHalNext=0; int scndHalNext =0; int inPortNext=0; int outPortNext=0;
             if (lines.get(i).equals("***")) {
                 halprg = false;
                 continue;
@@ -76,17 +78,33 @@ public class App {
                 int scndHal = Integer.parseInt(post.substring(0,1));
                 int inPort = Integer.parseInt(post.substring(2));
 
-                //prefill Links-list with null-vals
+                //prefill Links-list with 0-vals
                 if(links.size() < scndHal) {
                     preFillList(links, scndHal);
                 }
 
-                //ArrayList of Hashmaps with <inPort,OutPort> and index as halnr
-                links.get(firstHal).setAt1(outPort);
-                links.get(scndHal).setAt0(inPort);
-
-
-                System.out.println("firstHal: "+firstHal+", outPort: "+outPort+", scndHal: "+scndHal+", inPort: "+inPort);
+                if (!lines.get(i-1).equals("***")) {
+                    //Teilen in VOR und NACH ">"
+                    preS = lines.get(i-1).substring(0, lines.get(i-1).indexOf(">")-1);
+                    postS = lines.get(i-1).substring(lines.get(i).indexOf(">")+2);
+                    // get Hal numbers
+                    firstHalNext = Integer.parseInt(preS.substring(0,1));
+                    outPortNext = Integer.parseInt(preS.substring(2));
+                    // get Port numbers
+                    scndHalNext = Integer.parseInt(postS.substring(0,1));
+                    inPortNext = Integer.parseInt(postS.substring(2));
+                }
+                //ArrayList of Pairs with index as haln
+                if(lines.get(i-1).equals("***")) {
+                    links.set(firstHal, Pair.with(null, outPort));
+                } else if (i == lines.size()-1) {
+                    links.set(scndHal, Pair.with(inPort, null));
+                    links.set(firstHal, Pair.with(inPortNext, outPort));
+                } else {
+                    links.set(scndHalNext, Pair.with(inPortNext, outPort));
+                }
+                // DEBUG
+                // System.out.println("firstHal: "+firstHal+", outPort: "+outPort+", scndHal: "+scndHal+", inPort: "+inPort);
                 buffer newb = new buffer();
                 puffer.add(newb);
             } else if(!halprg) {
@@ -100,6 +118,41 @@ public class App {
                 //processes.add(newHAL);
             }
         }
+
+        /*boolean help = true; 
+        ArrayList<String> programs = new ArrayList<String>();
+        for(int h = 0; h < lines.size()+1; h++) {
+            if (lines.get(h).equals("***")) {
+                help = false;
+                continue;
+            } else if (help) {
+                halnr = Integer.parseInt(lines.get(h).substring(0,1));
+                programm = lines.get(h).substring(lines.get(h).indexOf(" "), lines.get(h).length());
+                programs.add(programm);
+            } else if (!help){
+                //Teilen in VOR und NACH ">"
+                String pre = lines.get(h).substring(0, lines.get(h).indexOf(">")-1);
+                String post = lines.get(h).substring(lines.get(h).indexOf(">")+2);
+                // get Hal numbers
+                int firstHal = Integer.parseInt(pre.substring(0,1));
+                int outPort= Integer.parseInt(pre.substring(2));
+                // get Port numbers
+                int scndHal = Integer.parseInt(post.substring(0,1));
+                int inPort = Integer.parseInt(post.substring(2));
+
+                //prefill Links-list with null-vals
+                if(links.size() < scndHal) {
+                    preFillList(links, scndHal);
+                }
+
+                //ArrayList of Pairs with index as haln
+                links.get(firstHal).setAt1(outPort);
+                links.get(scndHal).setAt0(inPort);
+
+                //DEBUG
+                System.out.println("firstHal: "+firstHal+", outPort: "+outPort+", scndHal: "+scndHal+", inPort: "+inPort);
+            }
+        }*/
         printList(links);
     }    
 }
