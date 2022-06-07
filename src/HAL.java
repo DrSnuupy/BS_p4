@@ -6,9 +6,11 @@ import java.nio.file.Paths;
 
 public class HAL extends Thread {
 
+    private ArrayList<buffer> bufIn = new ArrayList<buffer>();
+    private ArrayList<buffer> bufOut = new ArrayList<buffer>();
     private String PATH;
-    private int bpIn;
-    private int bpOut;
+    private ArrayList<Integer> bpIn = new ArrayList<Integer>();
+    private ArrayList<Integer> bpOut = new ArrayList<Integer>();
     private boolean debug = false;
     private BufferedReader br;
     private ArrayList<Triplet<Float, String, Float>> line = new ArrayList<Triplet<Float, String, Float>>();
@@ -16,11 +18,48 @@ public class HAL extends Thread {
     private float regs[] = { 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     private float accu = 0;
 
-    //Constructor
+    //Constructors
+    // Constructor for just one link to other HALs
     public HAL(String p, int bufferPortIn, int bufferPortOut){
         PATH = p;
-        bpIn = bufferPortIn;
-        bpOut = bufferPortOut;
+        if (bufferPortIn == -1) {
+            bpIn.add(null);
+        } else {
+            bpIn.add(bufferPortIn);
+        }
+        if (bufferPortOut == -1) {
+            bpOut.add(null);
+        } else {
+            bpOut.add(bufferPortOut);
+        }
+    }
+
+    public HAL(String p, buffer bIn, buffer bOut, int bufferPortIn, int bufferPortOut){
+        PATH = p;
+        if (bufferPortIn == -1) {
+            bpIn.add(null);
+        } else {
+            bpIn.add(bufferPortIn);
+        }
+        if (bufferPortOut == -1) {
+            bpOut.add(null);
+        } else {
+            bpOut.add(bufferPortOut);
+        }
+        bufIn.add(bIn);
+        bufOut.add(bOut);
+    }
+
+    public void setInBuffer(buffer inBuffer) {
+        bufIn.add(inBuffer);
+    }
+
+    public void setOutBuffer(buffer outBuffer) {
+        bufOut.add(outBuffer);
+    }
+
+    public void printObj() {
+        System.out.println("Path: "+PATH+", buffer port in: "+bpIn+", buffer port out: "+bpOut+", buffer in: "+bufIn+", buffer out: "+bufOut);
     }
 
 
@@ -116,18 +155,48 @@ public class HAL extends Thread {
                     break;
 
                 case "OUT":
-                    if (line.get(i).getValue2() == 0) {
-                        System.out.println("Aktueller Akkumulatorinhalt: [" + accu + "].\n");
-                    } /*else if (line.get(i).getValue2() == bpOut)*/
+                    if (bpOut.size() > bufOut.size()) {
+                        System.err.print("to many buffer ports for buffers");
+                        System.exit(1);
+                    } else if(bpOut.size() > bufOut.size()) {
+                        System.err.print("to many buffers for buffer ports");
+                        System.exit(1);
+                    }
 
-                    //buffer.put((int) (accu));
-                    regs[0] = +regs[0];
+                    if (line.get(i).getValue2() == 1) {
+                        System.out.println("Aktueller Akkumulatorinhalt: [" + accu + "].\n");
+                        regs[0] = +regs[0];
+                    } else if (line.get(i).getValue2() == (float) bpOut.get(i)) {
+                        bufOut.get(i).put((int) accu);
+                        regs[0] = +regs[0];
+                    } else if (bpOut.get(i) == null) {
+                        System.err.println("No output port assigned!");
+                        regs[0] = +regs[0];
+                    } else {
+                        regs[0] = +regs[0];
+                    }
                     break;
 
                 case "IN":
+                    if (bpIn.size() > bufIn.size()) {
+                        System.err.print("to many buffer ports for buffers");
+                        System.exit(1);
+                    } else if(bpIn.size() > bufIn.size()) {
+                        System.err.print("to many buffers for buffer ports");
+                        System.exit(1);
+                    }    
+
                     if (line.get(i).getValue2() == 0) {
                         accu = IN(debug, i, line, regs, accu);
-                    } else if (line.get(i).getValue2() == bpIn)
+                    } else if (line.get(i).getValue2() == (float) bpIn.get(i)) {
+                        bufIn.get(i).put((int) accu);
+                        regs[0] = +regs[0];
+                    } else if(bpIn.get(i) == null) {
+                        System.err.println("No output port assigned!");
+                        regs[0] = +regs[0];
+                    } else {
+                        regs[0] = +regs[0];
+                    }
                     break;
 
                 case "LOAD":

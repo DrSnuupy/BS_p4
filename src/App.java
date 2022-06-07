@@ -1,4 +1,7 @@
 import java.util.*;
+
+// import javax.swing.text.html.HTMLDocument.BlockElement;
+
 import org.javatuples.*;
 import java.io.*;
 import java.nio.file.Files;
@@ -25,24 +28,47 @@ public class App {
         }
         return lines;
     }
-    public static void printList(ArrayList<Pair<Integer, Integer>> list) {
+
+    public static void printList(ArrayList<ArrayList<Integer>> list) {
         for (int k = 0; k < list.size(); k++) {
-            System.out.println("HAL-Prozessor: "+ k +" inPort: "+ list.get(k).getValue0() +", outPort: "+list.get(k).getValue1());
+            System.out.println("Hal Prozessor: " +k+", mit den Ports: ");
+            for(int l = 0; l < list.size(); l++){
+                System.out.println(list.get(l)+", ");
+            } 
         }
+        System.out.println("'-' Werte sind out-Ports und '+' Werte in-Ports");
     }
-    public static void preFillList(ArrayList<Pair<Integer, Integer>> list, int amount) {
-        for (int i = 0; i < amount+1; i++) {
-            list.add(i, Pair.with(0, 0));
+
+    //decider true -> search for outPorts | false -> search for inPorts | of nothing matches return null
+    public static Integer findPort(ArrayList<Quartet<Integer,Integer,Integer,Integer>> list, int hal, boolean decider) {
+        for(int i = 0; i < list.size(); i++) {
+            if (decider == true) {
+                if (list.get(i).getValue0() == hal) {
+                    return list.get(i).getValue1();
+                } 
+            }else {
+                if(list.get(i).getValue2() == hal) {
+                    return list.get(i).getValue3();
+                }
+            }
         }
+        return -1;
     }
 
     //bekommt config file übergeben
     public static void main(String[] args) { // Argumente kann nur ein Path zur Config-datei sein
-        ArrayList<String> lines = new ArrayList<String>();
-        ArrayList<buffer> puffer = new ArrayList<buffer>();
-        ArrayList<HAL> processes = new ArrayList<HAL>();
-        ArrayList<Pair<Integer,Integer>> links = new ArrayList<Pair<Integer, Integer>>();
+        int maxsize = 16;
         BufferedReader br;
+        ArrayList<String> lines = new ArrayList<String>();
+        ArrayList<String> programs = new ArrayList<String>();
+        ArrayList<HAL> processes = new ArrayList<HAL>();
+        ArrayList<buffer> buf = new ArrayList<buffer>();
+        ArrayList<Quartet<Integer,Integer,Integer,Integer>> links = new ArrayList<Quartet<Integer,Integer,Integer,Integer>>();
+        
+        // for (int n = 0; n < maxsize; n++) {
+        //     programs.add("null");
+        // }
+
         for(String e : args) {
             if (Files.isReadable(Paths.get(e)) == true) {
                 try {
@@ -59,100 +85,56 @@ public class App {
                 System.exit(1);
             }
         }
-        //loop through lines
-        boolean halprg = true; String programm= ""; int halnr; int bufferPort = 0;
-        for(int i = lines.size()-1; i >= 0; i--) {
-            String preS=""; String postS=""; 
-            int firstHalNext=0; int scndHalNext =0; int inPortNext=0; int outPortNext=0;
-            if (lines.get(i).equals("***")) {
+
+        //loop through lines and extract values
+        boolean halprg = true; String programm= ""; int halnr;
+        for(int i = 0; i < lines.size(); i++) {
+            if (lines.get(i) == "***") { 
                 halprg = false;
                 continue;
-            } else if (halprg){
-                //Teilen in VOR und NACH ">"
-                String pre = lines.get(i).substring(0, lines.get(i).indexOf(">")-1);
-                String post = lines.get(i).substring(lines.get(i).indexOf(">")+2);
-                // get Hal numbers
-                int firstHal = Integer.parseInt(pre.substring(0,1));
-                int outPort= Integer.parseInt(pre.substring(2));
-                // get Port numbers
-                int scndHal = Integer.parseInt(post.substring(0,1));
-                int inPort = Integer.parseInt(post.substring(2));
+            } else if(!halprg) { // links between HAL processors
+                //before ">"
+                int outHal = Integer.parseInt(lines.get(i).substring(0,lines.get(i).indexOf(":")));
+                int outPort = Integer.parseInt(lines.get(i).substring(lines.get(i).indexOf(":")+1,lines.get(i).indexOf(">")-1));        
 
-                //prefill Links-list with 0-vals
-                if(links.size() < scndHal) {
-                    preFillList(links, scndHal);
-                }
+                //after ">"
+                int inHal = Integer.parseInt(lines.get(i).substring(lines.get(i).indexOf(">")+2, lines.get(i).lastIndexOf(":")));
+                int inPort = Integer.parseInt(lines.get(i).substring(lines.get(i).lastIndexOf(":")+1));
+                
+                //add to List
+                links.add(Quartet.with(outHal, outPort, inHal, inPort));
 
-                if (!lines.get(i-1).equals("***")) {
-                    //Teilen in VOR und NACH ">"
-                    preS = lines.get(i-1).substring(0, lines.get(i-1).indexOf(">")-1);
-                    postS = lines.get(i-1).substring(lines.get(i).indexOf(">")+2);
-                    // get Hal numbers
-                    firstHalNext = Integer.parseInt(preS.substring(0,1));
-                    outPortNext = Integer.parseInt(preS.substring(2));
-                    // get Port numbers
-                    scndHalNext = Integer.parseInt(postS.substring(0,1));
-                    inPortNext = Integer.parseInt(postS.substring(2));
-                }
-                //ArrayList of Pairs with index as haln
-                if(lines.get(i-1).equals("***")) {
-                    links.set(firstHal, Pair.with(null, outPort));
-                } else if (i == lines.size()-1) {
-                    links.set(scndHal, Pair.with(inPort, null));
-                    links.set(firstHal, Pair.with(inPortNext, outPort));
-                } else {
-                    links.set(scndHalNext, Pair.with(inPortNext, outPort));
-                }
-                // DEBUG
-                // System.out.println("firstHal: "+firstHal+", outPort: "+outPort+", scndHal: "+scndHal+", inPort: "+inPort);
-                buffer newb = new buffer();
-                puffer.add(newb);
-            } else if(!halprg) {
-                //Hal-Nr for identification and program as a path to the HAL program
+            } else { // HAL programm paths
+                //get substrings of HAL program paths
                 halnr = Integer.parseInt(lines.get(i).substring(0,1));
-                programm = lines.get(i).substring(lines.get(i).indexOf(" "), lines.get(i).length());
-                //Identify and rightly assign ports (in- and out-ward)
-
-
-                //HAL newHAL = new HAL(programm, );
-                //processes.add(newHAL);
+                programm = lines.get(i).substring(lines.get(i).indexOf(" ")+1, lines.get(i).length());
+                programs.add(programm);
+                // programs.set(halnr, programm);
             }
         }
 
-        /*boolean help = true; 
-        ArrayList<String> programs = new ArrayList<String>();
-        for(int h = 0; h < lines.size()+1; h++) {
-            if (lines.get(h).equals("***")) {
-                help = false;
-                continue;
-            } else if (help) {
-                halnr = Integer.parseInt(lines.get(h).substring(0,1));
-                programm = lines.get(h).substring(lines.get(h).indexOf(" "), lines.get(h).length());
-                programs.add(programm);
-            } else if (!help){
-                //Teilen in VOR und NACH ">"
-                String pre = lines.get(h).substring(0, lines.get(h).indexOf(">")-1);
-                String post = lines.get(h).substring(lines.get(h).indexOf(">")+2);
-                // get Hal numbers
-                int firstHal = Integer.parseInt(pre.substring(0,1));
-                int outPort= Integer.parseInt(pre.substring(2));
-                // get Port numbers
-                int scndHal = Integer.parseInt(post.substring(0,1));
-                int inPort = Integer.parseInt(post.substring(2));
+        // create HAL objects with right links
+        for (int i = 0; i < programs.size(); i++) {
+            HAL h = new HAL(programs.get(i), findPort(links, i+1, false), findPort(links, i+1, true));
+            processes.add(h);
+            h.printObj();
+        }
 
-                //prefill Links-list with null-vals
-                if(links.size() < scndHal) {
-                    preFillList(links, scndHal);
-                }
+        System.out.print("\nWith buffers:\n");
+        // create buffer objects
+        for (int i = 0; i < links.size()-1; i++) {
+            buffer b = new buffer();
+            buf.add(b);
+            //assign buffer to HAL
+            processes.get(links.get(i).getValue0()-1).setOutBuffer(b);
+            processes.get(links.get(i).getValue2()-1).setInBuffer(b);
 
-                //ArrayList of Pairs with index as haln
-                links.get(firstHal).setAt1(outPort);
-                links.get(scndHal).setAt0(inPort);
+            processes.get(i).printObj();
+        }
 
-                //DEBUG
-                System.out.println("firstHal: "+firstHal+", outPort: "+outPort+", scndHal: "+scndHal+", inPort: "+inPort);
-            }
-        }*/
-        printList(links);
-    }    
+        //start and run all processes
+        // for (HAL h : processes) {
+        //     h.start();
+        // }
+    }  
 }
