@@ -57,7 +57,7 @@ public class App {
 
     //bekommt config file übergeben
     public static void main(String[] args) { // Argumente kann nur ein Path zur Config-datei sein
-        int maxsize = 16;
+        // int maxsize = 16;
         BufferedReader br;
         ArrayList<String> lines = new ArrayList<String>();
         ArrayList<String> programs = new ArrayList<String>();
@@ -122,7 +122,7 @@ public class App {
 
         System.out.print("\nWith buffers:\n");
         // create buffer objects
-        for (int i = 0; i < links.size()-1; i++) {
+        for (int i = 0; i < links.size(); i++) {
             buffer b = new buffer();
             buf.add(b);
             //assign buffer to HAL
@@ -131,10 +131,11 @@ public class App {
 
             processes.get(i).printObj();
         }
+        processes.get(links.size()).printObj();
 
-        //start and run all processes
-        // for (HAL h : processes) {
-        //     h.start();
-        // }
+        // start and run all processes
+        for (HAL h : processes) {
+            h.start();
+        }
     }  
 }

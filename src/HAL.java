@@ -62,6 +62,21 @@ public class HAL extends Thread {
         System.out.println("Path: "+PATH+", buffer port in: "+bpIn+", buffer port out: "+bpOut+", buffer in: "+bufIn+", buffer out: "+bufOut);
     }
 
+    public buffer getInBuffer() {
+        return bufIn.get(bufIn.size());
+    }
+
+    public int getbufferPortCount(ArrayList<Integer> list) {
+        int count= 0;
+        for(Integer i : list) {
+            if (i != null) {
+                count = count+1;
+            } else {continue;}
+        }
+        return count;
+    }
+
+
 
     //get programm code
     public ArrayList<Triplet<Float, String, Float>> LoopThroughFile(File f, BufferedReader reader,
@@ -79,7 +94,7 @@ public class HAL extends Thread {
                 String i = st.substring(st.indexOf(" ") + 1, st.lastIndexOf(" "));
                 singleLine = singleLine.setAt1(i);
                 // Get Operand
-                if (!i.equals("START") /*&& !i.equals("STOP") && !i.equals("IN")*/) {
+                if (!i.equals("START") && !i.equals("STOP")) {
                     // Add vals to Triplet
                     Float o = Float.parseFloat(st.substring(st.lastIndexOf(" ") + 1)); // rafft er nicht weil in "1 START"
                     // keine 3. value existiert
@@ -109,6 +124,19 @@ public class HAL extends Thread {
         }
     }
 
+    public static int findIndex(ArrayList<Integer> list, Float val) {
+        for (int i = 0; i < list.size(); i++) {
+            if(list.get(i) == null) {
+                return 0;
+            } else {
+                if ((float) list.get(i) == val) {
+                    return i;
+                }
+            }
+        }
+        return 0;
+    }
+
     public float IN(boolean debug, int i, ArrayList<Triplet<Float, String, Float>> l, float[] r, float acc) {
         Scanner userInput = new Scanner(System.in);
         acc = Float.MAX_VALUE;
@@ -136,8 +164,9 @@ public class HAL extends Thread {
                 LoopThroughFile(programm, br, line);
                 // printArrayList(line);
             } catch (Exception x) {
-                System.out.print(x+"\n");
-                System.out.println("Please insert a programm you want to run! (PATH)");
+                System.err.print(x+"\n");
+                System.err.print(PATH+"\n");
+                // System.out.println("Please insert a programm you want to run! (PATH)");
                 System.exit(0);
             }
         }
@@ -155,45 +184,51 @@ public class HAL extends Thread {
                     break;
 
                 case "OUT":
-                    if (bpOut.size() > bufOut.size()) {
-                        System.err.print("to many buffer ports for buffers");
+                    // if (getbufferPortCount(bpOut) > bufOut.size()) {
+                    //     System.err.print("to many buffer ports for buffers");
+                    //     System.exit(1);
+                    // } else if(getbufferPortCount(bpOut) < bufOut.size()) {
+                    //     System.err.print("to many buffers for buffer ports");
+                    //     System.exit(1);
+                    // }
+                    if (bpOut.get(0) == null) {
                         System.exit(1);
-                    } else if(bpOut.size() > bufOut.size()) {
-                        System.err.print("to many buffers for buffer ports");
-                        System.exit(1);
-                    }
-
-                    if (line.get(i).getValue2() == 1) {
-                        System.out.println("Aktueller Akkumulatorinhalt: [" + accu + "].\n");
-                        regs[0] = +regs[0];
-                    } else if (line.get(i).getValue2() == (float) bpOut.get(i)) {
-                        bufOut.get(i).put((int) accu);
-                        regs[0] = +regs[0];
-                    } else if (bpOut.get(i) == null) {
-                        System.err.println("No output port assigned!");
-                        regs[0] = +regs[0];
                     } else {
-                        regs[0] = +regs[0];
+                        int iBpOut = findIndex(bpOut, line.get(i).getValue2());
+                        if (line.get(i).getValue2() == 1) {
+                            System.out.println("Aktueller Akkumulatorinhalt: [" + accu + "].\n");
+                            regs[0] = +regs[0];
+                        } else if (line.get(i).getValue2() == (float) bpOut.get(iBpOut)) {
+                            bufOut.get(iBpOut).put((int) accu);
+                            regs[0] = +regs[0];
+                        } else if (bpOut.size() == 0) {
+                            System.err.println("No output port assigned!");
+                            regs[0] = +regs[0];
+                        } else {
+                            regs[0] = +regs[0];
+                        }
                     }
                     break;
 
                 case "IN":
-                    if (bpIn.size() > bufIn.size()) {
+                    if (getbufferPortCount(bpIn) > bufIn.size()) {
                         System.err.print("to many buffer ports for buffers");
                         System.exit(1);
-                    } else if(bpIn.size() > bufIn.size()) {
+                    } else if(getbufferPortCount(bpIn) < bufIn.size()) {
                         System.err.print("to many buffers for buffer ports");
                         System.exit(1);
                     }    
 
-                    if (line.get(i).getValue2() == 0) {
+                    int iBpIn = findIndex(bpIn, line.get(i).getValue2());
+                    if (line.get(i).getValue2() == 1) {
                         accu = IN(debug, i, line, regs, accu);
-                    } else if (line.get(i).getValue2() == (float) bpIn.get(i)) {
-                        bufIn.get(i).put((int) accu);
+                    } else if (line.get(i).getValue2() == (float) bpIn.get(iBpIn)) {
+                        accu = bufIn.get(iBpIn).get();
                         regs[0] = +regs[0];
                     } else if(bpIn.get(i) == null) {
                         System.err.println("No output port assigned!");
                         regs[0] = +regs[0];
+
                     } else {
                         regs[0] = +regs[0];
                     }
