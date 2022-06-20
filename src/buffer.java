@@ -12,7 +12,8 @@ class buffer
 		}
 		data = x;
 		available = true;
-		notify();
+		// notify();
+		notifyAll();
 	}
 
 	public synchronized int get() {
@@ -23,7 +24,8 @@ class buffer
 			catch(InterruptedException e) {}
 		}
 		available = false;
-		notify();
+		// notify();
+		notifyAll();
 		return data;
 	}
 }

@@ -11,7 +11,7 @@ public class HAL extends Thread {
     private String PATH;
     private ArrayList<Integer> bpIn = new ArrayList<Integer>();
     private ArrayList<Integer> bpOut = new ArrayList<Integer>();
-    private boolean debug = false;
+    // private boolean debug = false;
     private BufferedReader br;
     private ArrayList<Triplet<Float, String, Float>> line = new ArrayList<Triplet<Float, String, Float>>();
     // int pc = 0;
@@ -137,7 +137,7 @@ public class HAL extends Thread {
         return 0;
     }
 
-    public float IN(boolean debug, int i, ArrayList<Triplet<Float, String, Float>> l, float[] r, float acc) {
+    public float IN(int i, ArrayList<Triplet<Float, String, Float>> l, float acc) {
         Scanner userInput = new Scanner(System.in);
         acc = Float.MAX_VALUE;
         while (acc == Float.MAX_VALUE) {
@@ -148,10 +148,12 @@ public class HAL extends Thread {
                 System.err.println("Input does not match the float regular expression\n" +
                         "Format is x.xx or x,xx ..depends");
                 userInput.next();
+            } catch(NoSuchElementException x) {
+                System.err.println(x);
+                userInput.next();
             }
         }
-        userInput.close();
-
+        // userInput.close();
         return acc;
     }
 
@@ -184,18 +186,18 @@ public class HAL extends Thread {
                     break;
 
                 case "OUT":
-                    // if (getbufferPortCount(bpOut) > bufOut.size()) {
-                    //     System.err.print("to many buffer ports for buffers");
-                    //     System.exit(1);
-                    // } else if(getbufferPortCount(bpOut) < bufOut.size()) {
-                    //     System.err.print("to many buffers for buffer ports");
-                    //     System.exit(1);
-                    // }
                     if (bpOut.get(0) == null) {
-                        System.exit(1);
+                        // System.exit(1);
+                        // System.out.println("null");
+                        if (line.get(i).getValue2() == 1) {
+                            System.out.println(PATH);
+                            System.out.println("Aktueller Akkumulatorinhalt: [" + accu + "].\n");
+                            regs[0] = +regs[0];
+                        }
                     } else {
                         int iBpOut = findIndex(bpOut, line.get(i).getValue2());
                         if (line.get(i).getValue2() == 1) {
+                            System.out.println(PATH);
                             System.out.println("Aktueller Akkumulatorinhalt: [" + accu + "].\n");
                             regs[0] = +regs[0];
                         } else if (line.get(i).getValue2() == (float) bpOut.get(iBpOut)) {
@@ -221,7 +223,9 @@ public class HAL extends Thread {
 
                     int iBpIn = findIndex(bpIn, line.get(i).getValue2());
                     if (line.get(i).getValue2() == 1) {
-                        accu = IN(debug, i, line, regs, accu);
+                        // accu = IN(debug, i, line, regs, accu);
+                        
+                        accu = IN(i, line, accu);
                     } else if (line.get(i).getValue2() == (float) bpIn.get(iBpIn)) {
                         accu = bufIn.get(iBpIn).get();
                         regs[0] = +regs[0];
@@ -299,10 +303,11 @@ public class HAL extends Thread {
 
                 case "JUMP":
                     if (line.get(i).getValue2() == 0) {
-                        System.out.println("Provide Register Adress.");
+                        System.out.println("Porgramm Counter Adress.");
                         System.exit(1);
                     } else {
                         i = (int) (line.get(i).getValue2()+0);
+                        i = i-2;
                     }
                     break;
 

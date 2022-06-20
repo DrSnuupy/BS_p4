@@ -87,7 +87,7 @@ public class App {
         }
 
         //loop through lines and extract values
-        boolean halprg = true; String programm= ""; int halnr;
+        boolean halprg = true; String programm= "";
         for(int i = 0; i < lines.size(); i++) {
             if (lines.get(i) == "***") { 
                 halprg = false;
@@ -106,7 +106,7 @@ public class App {
 
             } else { // HAL programm paths
                 //get substrings of HAL program paths
-                halnr = Integer.parseInt(lines.get(i).substring(0,1));
+                // halnr = Integer.parseInt(lines.get(i).substring(0,1));
                 programm = lines.get(i).substring(lines.get(i).indexOf(" ")+1, lines.get(i).length());
                 programs.add(programm);
                 // programs.set(halnr, programm);

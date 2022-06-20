@@ -16,7 +16,7 @@
             "request": "launch",
             "mainClass": "App",
             "projectName": "p4_7b07f9e",
-            "args": "/Users/carlrobinkrier/Documents/h_da/S6/BS/prgs/Config.txt"
+            "args": "/Users/carlrobinkrier/Documents/h_da/S6/BS/prgs/GraphConfig.txt"
         }
     ]
 }
